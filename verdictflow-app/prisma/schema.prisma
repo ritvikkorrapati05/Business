@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  config        String         @default("{}") // JSON string for screening criteria, branding, etc.
+  users         User[]
+  leads         Lead[]
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STAFF") // ADMIN, STAFF
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Lead {
+  id            String         @id @default(cuid())
+  name          String?
+  phone         String?
+  email         String?
+  caseType      String?
+  details       String?
+  status        String         @default("NEW") // NEW, QUALIFIED, UNQUALIFIED, CONTACTED
+  score         Int            @default(0)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  tenantId      String
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Conversation {
+  id         String    @id @default(cuid())
+  externalId String // phone number or session ID
+  platform   String // WEB, SMS
+  lead       Lead?     @relation(fields: [leadId], references: [id])
+  leadId     String?
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  tenantId   String
+  messages   Message[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([platform, externalId, tenantId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  role           String // ASSISTANT, USER
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model FollowUpSequence {
+  id        String         @id @default(cuid())
+  name      String
+  tenantId  String
+  steps     FollowUpStep[]
+  createdAt DateTime       @default(now())
+}
+
+model FollowUpStep {
+  id           String           @id @default(cuid())
+  sequence     FollowUpSequence @relation(fields: [sequenceId], references: [id])
+  sequenceId   String
+  delayMinutes Int
+  channel      String // SMS, EMAIL
+  template     String
+}
