@@ -1,19 +1,15 @@
-export interface CRMLead {
-  name: string;
-  phone: string;
-  email: string;
-  caseType: string;
-  details: string;
-}
+import { getCRMAgent } from "./crm/factory";
+import { CRMLead } from "./crm/types";
 
 export async function pushToCRM(tenantId: string, lead: CRMLead) {
-  console.log(`[CRM] Pushing lead for tenant ${tenantId} to Clio...`);
-  console.log(`[CRM] Lead data:`, lead);
+  console.log(`[CRM] Attempting to push lead for tenant ${tenantId}...`);
   
-  // Mock API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, crmId: `clio_${Math.random().toString(36).substring(7)}` });
-    }, 500);
-  });
+  const agent = await getCRMAgent(tenantId);
+  
+  if (!agent) {
+    console.log(`[CRM] No CRM integration configured for tenant ${tenantId}.`);
+    return { success: false, error: "No CRM configured" };
+  }
+
+  return agent.pushLead(lead);
 }

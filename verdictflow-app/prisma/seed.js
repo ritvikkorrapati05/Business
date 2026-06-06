@@ -29,6 +29,18 @@ async function main() {
   });
 
   console.log({ admin });
+
+  const crmConfig = await prisma.cRMConfig.upsert({
+    where: { tenantId: tenant.id },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      provider: 'CLIO',
+      apiKey: 'mock-clio-api-key',
+    },
+  });
+
+  console.log({ crmConfig });
 }
 
 main()
